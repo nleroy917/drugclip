@@ -11,20 +11,20 @@ pip install drugclip
 ```python
 from drugclip import DrugCLIPModel, DrugCLIPConfig
 
-# Load from original checkpoint
-model = DrugCLIPModel.from_checkpoint("checkpoint_best.pt")
+# load from original checkpoint the authors provided
+model = DrugCLIPModel.from_checkpoint("path/to/checkpoint_best.pt")
 
-# Or load from HuggingFace format
+# or load from HuggingFace format
 model = DrugCLIPModel.from_pretrained("path/to/saved/model")
 
-# Embed molecules from SMILES
+# embed molecules from SMILES
 emb = model.embed_smiles("CCO")
 emb = model.embed_smiles(["CCO", "CC(=O)O"])  # batch
 
-# Embed a pocket
+# embed a pocket
 emb = model.embed_pocket(atoms, coordinates)
 
-# Save in HuggingFace format
+# save in HuggingFace format
 model.save_pretrained("path/to/save")
 
 # similarity score (higher = better binding)
