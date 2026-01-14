@@ -7,7 +7,10 @@ requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.4.1",
     "rdkit>=2025.9.3",
-    "scikit-learn>=1.8.0",
+    "scipy>=1.14.0",
     "torch>=2.9.1",
     "transformers>=4.57.5",
 ]
+
+[tool.setuptools.packages.find]
+include = ["drugclip*", "unimol*"]

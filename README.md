@@ -3,8 +3,11 @@
 A PyTorch implementation of DrugCLIP, from the paper: https://www.science.org/doi/10.1126/science.ads9530
 
 ## Installation:
+You can clone this repo and install this package with (preferably `uv`):
 ```bash
-pip install drugclip
+git clone git@github.com:nleroy917/drugclip.git
+cd drugclip
+uv pip install -e .
 ```
 
 ## Usage:
