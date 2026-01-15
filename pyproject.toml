@@ -3,7 +3,7 @@ name = "drugclip"
 version = "0.1.0"
 description = "Pure PyTorch and/or Huggingface transformers implementation of DrugCLIP (and Uni-Mol)."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "lmdb>=1.7.5",
     "numpy>=2.4.1",
