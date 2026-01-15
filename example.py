@@ -138,9 +138,7 @@ def example_similarity_search(model: DrugCLIPModel):
 
     mol_inputs = to_model_input(mol_tokenized, device=model.device)
     with torch.no_grad():
-        mol_emb = model.encode_molecule(
-            mol_inputs["tokens"], mol_inputs["distances"], mol_inputs["edge_types"]
-        )
+        mol_emb = model.encode_molecule(**mol_inputs)
 
     # load pockets from LMDB
     try:
@@ -157,9 +155,7 @@ def example_similarity_search(model: DrugCLIPModel):
         inputs = to_model_input(tokenized, device=model.device)
 
         with torch.no_grad():
-            emb = model.encode_pocket(
-                inputs["tokens"], inputs["distances"], inputs["edge_types"]
-            )
+            emb = model.encode_pocket(**inputs)
         pocket_embs.append(emb)
         pocket_ids.append(data.get("pocket", "unknown"))
 

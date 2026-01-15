@@ -12,3 +12,4 @@ wheels/
 checkpoint_best.pt
 drugclip-checkpoint_best
 data
+qdrant_storage

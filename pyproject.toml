@@ -13,5 +13,14 @@ dependencies = [
     "transformers>=4.57.5",
 ]
 
+[project.optional-dependencies]
+qdrant = [
+    "qdrant-client>=1.9.0",
+    "tqdm>=4.66.0",
+]
+
+[project.scripts]
+load-qdrant = "drugclip.load_qdrant:main"
+
 [tool.setuptools.packages.find]
 include = ["drugclip*", "unimol*"]
