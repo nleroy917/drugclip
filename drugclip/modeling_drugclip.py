@@ -50,7 +50,9 @@ class DrugCLIPModel(PreTrainedModel):
         distances: torch.Tensor,
         edge_types: torch.Tensor,
     ) -> torch.Tensor:
-        """Encode molecule to projection_dim embedding."""
+        """
+        Encode molecule to projection_dim embedding.
+        """
         hidden = self.mol_model(tokens, distances, edge_types)
         emb = self.mol_project(hidden[:, 0, :])  # CLS token
         return F.normalize(emb, p=2, dim=-1)
@@ -101,61 +103,6 @@ class DrugCLIPModel(PreTrainedModel):
             "logit_scale": self.logit_scale.exp(),
         }
 
-    @torch.no_grad()
-    def embed_smiles(self, smiles: Union[str, List[str]], device: str = None) -> np.ndarray:
-        """
-        Embed SMILES string(s) to projection_dim vectors.
-
-        Args:
-            smiles: Single SMILES or list of SMILES
-            device: Device override
-
-        Returns:
-            [N, projection_dim] numpy array
-        """
-        if isinstance(smiles, str):
-            smiles = [smiles]
-
-        device = device or self.device
-        embeddings = []
-
-        for smi in smiles:
-            data = smiles_to_input(smi, self.config.mol_dictionary)
-            if data is None:
-                print(f"Warning: Failed to process {smi}")
-                continue
-
-            tokens = torch.LongTensor(data["tokens"]).unsqueeze(0).to(device)
-            distances = torch.FloatTensor(data["distances"]).unsqueeze(0).to(device)
-            edge_types = torch.LongTensor(data["edge_types"]).unsqueeze(0).to(device)
-
-            emb = self.encode_molecule(tokens, distances, edge_types)
-            embeddings.append(emb.cpu().numpy())
-
-        return np.concatenate(embeddings, axis=0) if embeddings else np.array([])
-
-    @torch.no_grad()
-    def embed_pocket(self, atoms: List[str], coordinates: np.ndarray, device: str = None) -> np.ndarray:
-        """
-        Embed pocket to projection_dim vector.
-
-        Args:
-            atoms: List of atom symbols
-            coordinates: [N, 3] array
-            device: Device override
-
-        Returns:
-            [1, projection_dim] numpy array
-        """
-        device = device or self.device
-        data = atoms_to_input(atoms, coordinates, self.config.pocket_dictionary)
-
-        tokens = torch.LongTensor(data["tokens"]).unsqueeze(0).to(device)
-        distances = torch.FloatTensor(data["distances"]).unsqueeze(0).to(device)
-        edge_types = torch.LongTensor(data["edge_types"]).unsqueeze(0).to(device)
-
-        emb = self.encode_pocket(tokens, distances, edge_types)
-        return emb.cpu().numpy()
 
     @classmethod
     def from_checkpoint(
@@ -337,6 +284,80 @@ def atoms_to_input(atoms: List[str], coords: np.ndarray, dictionary: Dict[str, i
 
     return {"tokens": tokens, "distances": distances, "edge_types": edge_types}
 
+
+def tokenize_molecule(
+    data: Dict,
+    dictionary: Dict[str, int],
+    max_atoms: int = 256,
+) -> Dict:
+    """
+    Tokenize molecule from LMDB data format.
+
+    Args:
+        data: Dict with 'atoms' (list of str) and 'coordinates' (list of arrays or [N,3] array)
+        dictionary: Atom type dictionary
+        max_atoms: Maximum number of atoms
+
+    Returns:
+        Dict with 'tokens', 'distances', 'edge_types' ready for model input
+    """
+    atoms = data["atoms"]
+    coords = data["coordinates"]
+
+    # handle list of conformer arrays - use first conformer
+    if isinstance(coords, list):
+        coords = coords[0]
+
+    coords = np.asarray(coords, dtype=np.float32)
+    return atoms_to_input(atoms, coords, dictionary, max_atoms)
+
+
+def tokenize_pocket(
+    data: Dict,
+    dictionary: Dict[str, int],
+    max_atoms: int = 256,
+) -> Dict:
+    """
+    Tokenize pocket from LMDB data format.
+
+    Args:
+        data: Dict with 'pocket_atoms' (list of str) and 'pocket_coordinates' (list of [3] arrays)
+        dictionary: Atom type dictionary
+        max_atoms: Maximum number of atoms
+
+    Returns:
+        Dict with 'tokens', 'distances', 'edge_types' ready for model input
+    """
+    atoms = data["pocket_atoms"]
+    coords = data["pocket_coordinates"]
+
+    # stack list of coordinate arrays into [N, 3]
+    if isinstance(coords, list):
+        coords = np.stack(coords, axis=0)
+
+    coords = np.asarray(coords, dtype=np.float32)
+    return atoms_to_input(atoms, coords, dictionary, max_atoms)
+
+
+def to_model_input(
+    tokenized: Dict,
+    device: str = "cpu",
+) -> Dict[str, torch.Tensor]:
+    """
+    Convert tokenized data to model-ready tensors.
+
+    Args:
+        tokenized: Output from tokenize_molecule or tokenize_pocket
+        device: Target device
+
+    Returns:
+        Dict with 'tokens', 'distances', 'edge_types' as batched tensors
+    """
+    return {
+        "tokens": torch.LongTensor(tokenized["tokens"]).unsqueeze(0).to(device),
+        "distances": torch.FloatTensor(tokenized["distances"]).unsqueeze(0).to(device),
+        "edge_types": torch.LongTensor(tokenized["edge_types"]).unsqueeze(0).to(device),
+    }
 
 
 # backward compatibility
