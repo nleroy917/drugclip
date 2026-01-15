@@ -15,7 +15,7 @@ uv pip install -e .
 from drugclip import DrugCLIPModel, DrugCLIPConfig
 
 # load from original checkpoint the authors provided
-model = DrugCLIPModel.from_checkpoint("path/to/checkpoint_best.pt")
+model = DrugCLIPModel.from_checkpoint("checkpoint_best.pt")
 
 # or load from HuggingFace format
 model = DrugCLIPModel.from_pretrained("path/to/saved/model")
