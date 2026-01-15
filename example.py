@@ -26,7 +26,7 @@ def load_lmdb(path: str) -> list:
     )
     data_list = []
     with env.begin() as txn:
-        for key, value in txn.cursor():
+        for _, value in txn.cursor():
             data_list.append(pickle.loads(value))
     env.close()
     return data_list
