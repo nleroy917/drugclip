@@ -14,6 +14,7 @@ Environment variables:
 import argparse
 import os
 import uuid
+
 from typing import Dict, List
 
 import lmdb
@@ -74,10 +75,15 @@ def create_collection(client: QdrantClient, recreate: bool = False):
             distance=Distance.COSINE,
         ),
     )
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name="type",
+        field_schema="keyword",
+    )
     print(f"Created collection with {VECTOR_DIM}-dim vectors, cosine distance")
 
 
-def load_lmdb(path: str, desc: str = "Loading") -> List[Dict]:
+def load_lmdb(path: str, desc: str = "Loading", subset: int = None) -> List[Dict]:
     """
     Load all entries from an LMDB file with progress bar.
     """
@@ -96,8 +102,15 @@ def load_lmdb(path: str, desc: str = "Loading") -> List[Dict]:
         for _, value in tqdm(txn.cursor(), total=num_entries, desc=desc):
             data_list.append(pickle.loads(value))
     env.close()
-    return data_list
+    return data_list[:subset] if subset is not None else data_list
 
+def load_encoded_mols(path: str) -> List[Dict]:
+    """
+    Load pre-encoded molecule embeddings from pickle file.
+    """
+    with open(path, "rb") as f:
+        data_list = pickle.load(f)
+    return data_list
 
 def encode_molecules(
     model: DrugCLIPModel,
@@ -119,10 +132,13 @@ def encode_molecules(
             vector = emb.squeeze(0).cpu().numpy().tolist()
 
             # extract metadata
+            # ['coordinates', 'atoms', 'smi', 'IDs', 'subset']
             payload = {
                 "type": "molecule",
                 "smi": data.get("smi", ""),
                 "num_atoms": len(data.get("atoms", [])),
+                "subset": data.get("subset", ""),
+                "ids": data.get("IDs", []),
             }
 
             # add any other useful fields from data
@@ -211,6 +227,7 @@ def main():
     parser.add_argument("--checkpoint", type=str, default="checkpoint_best.pt", help="Model checkpoint")
     parser.add_argument("--device", type=str, default=None, help="Device to use (cpu, cuda, mps). Auto-detects if not specified")
     parser.add_argument("--recreate", action="store_true", help="Recreate collection if exists")
+    parser.add_argument("--subset", type=int, default=None, help="Only process this many entries from each LMDB (for testing)")
     args = parser.parse_args()
 
     if not args.molecules and not args.pockets:
@@ -230,7 +247,7 @@ def main():
 
     # encode molecules
     if args.molecules:
-        mol_data = load_lmdb(args.molecules, desc="Loading molecules")
+        mol_data = load_lmdb(args.molecules, desc="Loading molecules", subset=args.subset)
         print(f"Loaded {len(mol_data)} molecules")
 
         mol_points = encode_molecules(model, mol_data)

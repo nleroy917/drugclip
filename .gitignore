@@ -13,3 +13,6 @@ checkpoint_best.pt
 drugclip-checkpoint_best
 data
 qdrant_storage
+.env
+encoded_mol_embs
+encoded_mol_embs.zip

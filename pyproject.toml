@@ -21,6 +21,8 @@ qdrant = [
 
 [project.scripts]
 load-qdrant = "drugclip.load_qdrant:main"
+load-preencoded = "drugclip.load_preencoded:main"
+query-qdrant = "drugclip.query_qdrant:main"
 
 [tool.setuptools.packages.find]
 include = ["drugclip*", "unimol*"]
