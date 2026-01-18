@@ -57,8 +57,10 @@ def load_lmdb(path: str) -> List[Dict]:
 
 
 def compute_auc(labels: np.ndarray, scores: np.ndarray) -> float:
-    """Compute AUC-ROC."""
-    # Sort by score descending
+    """
+    Compute AUC-ROC.
+    """
+    # sort by score descending
     sorted_indices = np.argsort(-scores)
     sorted_labels = labels[sorted_indices]
 
@@ -69,12 +71,12 @@ def compute_auc(labels: np.ndarray, scores: np.ndarray) -> float:
     if n_pos == 0 or n_neg == 0:
         return 0.5
 
-    # Compute AUC using Mann-Whitney U statistic
-    # AUC = P(score(positive) > score(negative))
+    # compute AUC using Mann-Whitney U statistic
+    # auc = P(score(positive) > score(negative))
     pos_scores = scores[labels == 1]
     neg_scores = scores[labels == 0]
 
-    # Use scipy for numerical stability
+    # use scipy for numerical stability
     statistic, _ = stats.mannwhitneyu(pos_scores, neg_scores, alternative="greater")
     auc = statistic / (n_pos * n_neg)
 
