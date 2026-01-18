@@ -1,5 +1,5 @@
 > [!IMPORTANT]  
-> I am still working on validating my implementation. The weights load perfectly, and the forward passes have been validated, but I am struggling to reproduce the papers results -- will continue to work and if anyone has thoughts let me know.
+> I am still working on validating my implementation. The weights load correctly, and the forward pass is identical to the original implementation, but I have not yet been able to reproduce the results from the paper. If anyone is interested in collaborating on this, please reach out!
 
 # drugclip
 
