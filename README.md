@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> I am still working on validating my implementation. The weights load perfectly, and the forward passes have been validated, but I am struggling to reproduce the papers results -- will continue to work and if anyone has thoughts let me know.
+
 # drugclip
 
 A PyTorch implementation of DrugCLIP, from the paper: https://www.science.org/doi/10.1126/science.ads9530
