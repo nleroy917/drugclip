@@ -105,6 +105,57 @@ class DrugCLIPModel(PreTrainedModel):
 
 
     @classmethod
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path,
+        *model_args,
+        mol_dict_path: str = None,
+        pocket_dict_path: str = None,
+        **kwargs,
+    ):
+        """
+        Load DrugCLIP from HuggingFace format.
+
+        If mol_dict_path/pocket_dict_path are provided, the dictionaries will be
+        loaded from those files and used to update the config.
+        """
+        model = super().from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
+
+        # Load dictionaries from files if provided
+        model_path = Path(pretrained_model_name_or_path)
+        if model_path.is_dir():
+            if mol_dict_path is None:
+                candidate = model_path / "dict_mol.txt"
+                if candidate.exists():
+                    mol_dict_path = candidate
+            if pocket_dict_path is None:
+                candidate = model_path / "dict_pkt.txt"
+                if candidate.exists():
+                    pocket_dict_path = candidate
+
+        if mol_dict_path:
+            model.config.mol_dictionary = load_dictionary(mol_dict_path)
+        if pocket_dict_path:
+            model.config.pocket_dictionary = load_dictionary(pocket_dict_path)
+
+        return model
+
+    def save_pretrained(self, save_directory, *args, **kwargs):
+        """
+        Save model and dictionary files.
+        """
+        super().save_pretrained(save_directory, *args, **kwargs)
+
+        save_path = Path(save_directory)
+        save_path.mkdir(parents=True, exist_ok=True)
+
+        # Save dictionary files alongside the model
+        if self.config.mol_dictionary:
+            _save_dictionary(self.config.mol_dictionary, save_path / "dict_mol.txt")
+        if self.config.pocket_dictionary:
+            _save_dictionary(self.config.pocket_dictionary, save_path / "dict_pkt.txt")
+
+    @classmethod
     def from_checkpoint(
         cls,
         checkpoint_path: str,
@@ -206,6 +257,19 @@ def load_dictionary(path: Union[str, Path]) -> Dict[str, int]:
         for idx, line in enumerate(f):
             d[line.strip()] = idx
     return d
+
+
+def _save_dictionary(dictionary: Dict[str, int], path: Union[str, Path]) -> None:
+    """
+    Save atom type dictionary to file.
+
+    Writes tokens in order of their indices (value order, not key order).
+    """
+    # Sort by index value to maintain correct order
+    sorted_items = sorted(dictionary.items(), key=lambda x: x[1])
+    with open(path, "w") as f:
+        for token, _ in sorted_items:
+            f.write(f"{token}\n")
 
 
 def smiles_to_input(smiles: str, dictionary: Dict[str, int], num_conf: int = 10) -> Optional[Dict]:
